@@ -9,6 +9,7 @@ import ijson
 from config import pagesize, questionss
 
 def apiquestion():
+    #queries
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
     before = request.args.get("before", "")
@@ -25,9 +26,10 @@ def apiquestion():
 
     start = (page - 1) * pagesize
     end = start + pagesize
+
     pagelist = []
     records = 0
-
+    #prepare response
     with open(questionss, "r", encoding="utf-8") as f:
         for obj in ijson.items(f, "item"):
             date = extractdates(obj)
