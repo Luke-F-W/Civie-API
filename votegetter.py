@@ -9,6 +9,7 @@ import ijson
 from config import pagesize, votess
 
 def apivote():
+    #queries
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
     before = request.args.get("before", "")
@@ -27,7 +28,7 @@ def apivote():
 
     pagelist = []
     records = 0
-
+    #prepare response
     with open(votess, "r", encoding="utf-8") as f:
         for obj in ijson.items(f, "item"):
             date = extractdates(obj)
