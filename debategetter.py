@@ -8,6 +8,7 @@ import ijson
 from config import pagesize, debatess
 
 def apidebate():
+    #queries
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
     before = request.args.get("before", "")
@@ -26,7 +27,7 @@ def apidebate():
 
     pagelist = []
     records = 0
-
+    #prepare response
     with open(debatess, "r", encoding="utf-8") as f:
         for obj in ijson.items(f, "item"):
             date = extractdates(obj)
