@@ -19,6 +19,7 @@ folders = {
     "stats": idstatss
 }
 def getmember(id):
+    #queries
     search = request.args.get("q", "")
     before = request.args.get("before", "")
     after = request.args.get("after", "")
@@ -35,9 +36,11 @@ def getmember(id):
     result = {}
     for name, folder in folders.items():
         for filename in os.listdir(folder):
+            #find file matching membercode :P
             if id.lower() in filename.lower():
                 filepath = os.path.join(folder, filename)
 
+                #always return stats as is
                 if name == "stats":
                     with open(filepath, "r", encoding="utf-8") as f:
                         result[name] = json.load(f)
