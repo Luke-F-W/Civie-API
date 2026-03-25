@@ -9,6 +9,7 @@ from config import pagesize, lobbyingg
 
 
 def apilobby():
+    #queries
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
     before = request.args.get("before", "")
@@ -28,7 +29,7 @@ def apilobby():
 
     pagelist = []
     records = 0
-
+    #prepare response
     with open(lobbyingg, "r", encoding="utf-8") as f:
         for obj in ijson.items(f, "item"):
             date = extractdates(obj)
