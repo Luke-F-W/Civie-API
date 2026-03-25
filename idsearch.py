@@ -48,6 +48,7 @@ def getmember(id):
 
                 filtered = []
                 with open(filepath, "r", encoding="utf-8") as f:
+                    #lobbying is structured differently
                     if name == "lobbying":
                         items = ijson.items(f, "item")
                     else:
