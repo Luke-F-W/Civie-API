@@ -8,6 +8,7 @@ import ijson
 from config import pagesize, billss
 
 def apibill():
+    #queries
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
     before = request.args.get("before", "")
@@ -25,7 +26,7 @@ def apibill():
     end = start + pagesize
     pagelist = []
     records = 0
-
+    #prepare response
     with open(billss, "r", encoding="utf-8") as f:
         for obj in ijson.items(f, "item"):
             date = extractdates(obj)
