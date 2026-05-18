@@ -1,47 +1,68 @@
-"""This returns 30 debate records matching the queries (if the user includes any)
-it gets them from the debate json, i use ijson as it doesnt load the entire json
-into memory, which is important as the debate json is like 95mb"""
+"""This returns 30 debate records matching the queries (if the user includes any)"""
 from flask import request, Response
 import json
-from mainargs import parsedate, extractdates, searchvalue
-import ijson
-from config import pagesize, debatess
+import sqlite3
+from config import pagesize, dbpath
+
 
 def apidebate():
     #queries
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
-    before = request.args.get("before", "")
-    after = request.args.get("after", "")
+    before = request.args.get("before", "2300-01-01") or "2300-01-01"
+    after = request.args.get("after", "1900-01-01") or "1900-01-01"
+    searchforname = request.args.get("name", "")
+    searchdebatetitles = request.args.get("debatetitles", "")
 
-    if before:
-        beforedate = parsedate(before)
-    else:
-        beforedate = None
-    if after:
-        afterdate = parsedate(after)
-    else:
-        afterdate = None
+    #debate type queries
+    dail = request.args.get("dail", "true").lower() == "true"
+    seanad = request.args.get("seanad", "true").lower() == "true"
+    committee = request.args.get("committee", "true").lower() == "true"
+
     start = (page - 1) * pagesize
-    end = start + pagesize
 
-    pagelist = []
-    records = 0
-    #prepare response
-    with open(debatess, "r", encoding="utf-8") as f:
-        for obj in ijson.items(f, "item"):
-            date = extractdates(obj)
+    query = """
+        SELECT JSON FROM Debates
+        WHERE ContextDate <= ?
+        AND ContextDate >= ?
+        AND (? = '' OR DebateTitles LIKE ? OR JSON LIKE ?)
+        AND (? = '' OR NamesOfMembers LIKE ? OR MemberCodes LIKE ?)
+        AND (? = '' OR DebateTitles LIKE ?)
+        AND (? = 0 OR HouseCode != 'dail')
+        AND (? = 0 OR HouseCode != 'seanad')
+        AND (? = 0 OR (HouseCode = 'dail' OR HouseCode = 'seanad'))
+        LIMIT ? OFFSET ?
+    """
 
-            if beforedate and date and date > beforedate:
-                continue
-            if afterdate and date and date < afterdate:
-                continue
-            if search and not searchvalue(obj, search):
-                continue
+    countquery = """
+        SELECT COUNT(*) FROM Debates
+        WHERE ContextDate <= ?
+        AND ContextDate >= ?
+        AND (? = '' OR DebateTitles LIKE ? OR JSON LIKE ?)
+        AND (? = '' OR NamesOfMembers LIKE ? OR MemberCodes LIKE ?)
+        AND (? = '' OR DebateTitles LIKE ?)
+        AND (? = 0 OR HouseCode != 'dail')
+        AND (? = 0 OR HouseCode != 'seanad')
+        AND (? = 0 OR (HouseCode = 'dail' OR HouseCode = 'seanad'))
+    """
 
-            records += 1
-            if start <= records <= end:
-                pagelist.append(obj)
+    sparams = [
+        before, after,
+        search, f"%{search}%", f"%{search}%",
+        searchforname, f"%{searchforname}%", f"%{searchforname}%",
+        searchdebatetitles, f"%{searchdebatetitles}%",
+        int(not dail), int(not seanad), int(not committee),
+    ]
+
+    with sqlite3.connect(dbpath) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute(countquery, sparams)
+        records = cursor.fetchone()[0]
+
+        cursor.execute(query, sparams + [pagesize, start])
+        pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
 
     responsed = {
         "page": page,

@@ -1,52 +1,76 @@
-"""This returns 30 vote records matching the queries (if the user includes any)
-it gets them from the vote json, i use ijson as it doesnt load the entire json
-into memory, which is VERY important as the vote json is like 200mb, its the largest
-json that i have"""
+"""This returns 30 vote records matching the queries (if the user includes any)"""
 from flask import request, Response
 import json
-from mainargs import parsedate, extractdates, searchvalue
-import ijson
-from config import pagesize, votess
+import sqlite3
+from config import pagesize, dbpath
+
 
 def apivote():
     #queries
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
-    before = request.args.get("before", "")
-    after = request.args.get("after", "")
-    if before:
-        beforedate = parsedate(before)
-    else:
-        beforedate = None
-    if after:
-        afterdate = parsedate(after)
-    else:
-        afterdate = None
+    before = request.args.get("before", "2300-01-01") or "2300-01-01"
+    after = request.args.get("after", "1900-01-01") or "1900-01-01"
+    searchforname = request.args.get("name", "")
+
+    #vote type queries
+    dail = request.args.get("dail", "true").lower() == "true"
+    seanad = request.args.get("seanad", "true").lower() == "true"
+    committee = request.args.get("committee", "true").lower() == "true"
+
+    OutcomeLost = request.args.get("lost", "true").lower() == "true"
+    OutcomeCarried = request.args.get("carried", "true").lower() == "true"
 
     start = (page - 1) * pagesize
-    end = start + pagesize
 
-    pagelist = []
-    records = 0
-    #prepare response
-    with open(votess, "r", encoding="utf-8") as f:
-        for obj in ijson.items(f, "item"):
-            date = extractdates(obj)
+    query = """
+        SELECT JSON FROM Votes
+        WHERE ContextDate <= ?
+        AND ContextDate >= ?
+        AND (? = '' OR Vote LIKE ?)
+        AND (? = '' OR ForNamesOfMembers LIKE ? OR AgainstNamesOfMembers LIKE ? OR AbstainNamesOfMembers LIKE ?)
+        AND (? = 0 OR Chamber != 'Dáil Éireann')
+        AND (? = 0 OR Chamber != 'Seanad Éireann')
+        AND (? = 0 OR (Chamber = 'Dáil Éireann' OR Chamber = 'Seanad Éireann'))
+        AND (? = 0 OR Outcome != 'Lost')
+        AND (? = 0 OR Outcome != 'Carried')
+        LIMIT ? OFFSET ?
+    """
 
-            if beforedate and date and date > beforedate:
-                continue
-            if afterdate and date and date < afterdate:
-                continue
-            if search and not searchvalue(obj, search):
-                continue
+    countquery = """
+        SELECT COUNT(*) FROM Votes
+        WHERE ContextDate <= ?
+        AND ContextDate >= ?
+        AND (? = '' OR Vote LIKE ?)
+        AND (? = '' OR ForNamesOfMembers LIKE ? OR AgainstNamesOfMembers LIKE ? OR AbstainNamesOfMembers LIKE ?)
+        AND (? = 0 OR Chamber != 'Dáil Éireann')
+        AND (? = 0 OR Chamber != 'Seanad Éireann')
+        AND (? = 0 OR (Chamber = 'Dáil Éireann' OR Chamber = 'Seanad Éireann'))
+        AND (? = 0 OR Outcome != 'Lost')
+        AND (? = 0 OR Outcome != 'Carried')
+    """
 
-            records += 1
-            if start <= records <= end:
-                pagelist.append(obj)
+    sparams = [
+        before, after,
+        search, f"%{search}%",
+        searchforname, f"%{searchforname}%", f"%{searchforname}%", f"%{searchforname}%",
+        int(not dail), int(not seanad), int(not committee),
+        int(not OutcomeLost), int(not OutcomeCarried),
+    ]
+
+    with sqlite3.connect(dbpath) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute(countquery, sparams)
+        records = cursor.fetchone()[0]
+
+        cursor.execute(query, sparams + [pagesize, start])
+        pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
 
     responsed = {
         "page": page,
-        "page_size": pagesize,
+        "pagesize": pagesize,
         "records": records,
         "data": pagelist
     }

@@ -3,69 +3,54 @@
 and returns a json from each if it has the membercode in them, theres 1 for
 lobbying, bills, votes, debates, questions and stats. i do not pageinate here
 as the jsons are relatively small and do not really require pagination"""
-from flask import request
+from flask import request, Response
 import json
-from mainargs import parsedate, extractdates, searchvalue
-from config import idbillss, iddebatess, idlobbyingg, idquestionss, idstatss, idvotess
-import os
-import ijson
+from config import pagesize, dbpath
+import sqlite3
 
-folders = { 
-    "bills": idbillss,
-    "votes": idvotess,
-    "debates": iddebatess,
-    "lobbying": idlobbyingg,
-    "questions": idquestionss,
-    "stats": idstatss
-}
+
 def getmember(id):
-    #queries
+    before = request.args.get("before", "2300-01-01") or "2300-01-01"
+    after = request.args.get("after", "1900-01-01") or "1900-01-01"
+    page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
-    before = request.args.get("before", "")
-    after = request.args.get("after", "")
+    offset = (page - 1) * pagesize
 
-    if before:
-        beforedate = parsedate(before)
-    else:
-        beforedate = None
-    if after:
-        afterdate = parsedate(after)
-    else:
-        afterdate = None
+    tables = [
+        ("bills",     "Legislation", "ContextDate", "NamesOfMembers LIKE ?"),
+        ("votes",     "Votes",       "ContextDate", "ForVoters LIKE ? OR AgainstVoters LIKE ? OR AbstainVotes LIKE ?"),
+        ("debates",   "Debates",     "ContextDate", "MemberCodes LIKE ?"),
+        ("lobbying",  "Lobbying",    "contextDate", "Membercodes LIKE ?"),
+        ("questions", "Questions",   "contextDate", "MembercodeBy LIKE ?"),
+    ]
 
     result = {}
-    for name, folder in folders.items():
-        for filename in os.listdir(folder):
-            #find file matching membercode :P
-            if id.lower() in filename.lower():
-                filepath = os.path.join(folder, filename)
+    like = f"%{id}%"
+    slike = f"%{search}%"
 
-                #always return stats as is
-                if name == "stats":
-                    with open(filepath, "r", encoding="utf-8") as f:
-                        result[name] = json.load(f)
-                    break
+    with sqlite3.connect(dbpath) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-                filtered = []
-                with open(filepath, "r", encoding="utf-8") as f:
-                    #lobbying is structured differently
-                    if name == "lobbying":
-                        items = ijson.items(f, "item")
-                    else:
-                        items = ijson.items(f, "results.item")
+        for name, table, datecol, condition in tables:
+            likes = (like, like, like) if name == "votes" else (like,)
+            base = f"FROM {table} WHERE {datecol} <= ? AND {datecol} >= ? AND ({condition}) AND (? = '' OR JSON LIKE ?)"
 
-                    for obj in items:
-                        date = extractdates(obj)
-                        if beforedate and date and date > beforedate:
-                            continue
-                        if afterdate and date and date < afterdate:
-                            continue
-                        if search and not searchvalue(obj, search):
-                            continue
-                        filtered.append(obj)
+            cursor.execute(f"SELECT COUNT(*) {base}", (before, after, *likes, search, slike))
+            records = cursor.fetchone()[0]
 
-                if filtered:
-                    result[name] = filtered
-                break
+            cursor.execute(f"SELECT JSON {base} LIMIT ? OFFSET ?", (before, after, *likes, search, slike, pagesize, offset))
+            result[name] = {
+                "page": page, "pagesize": pagesize, "records": records,
+                "data": [json.loads(row["JSON"]) for row in cursor.fetchall()]
+            }
 
-    return result
+        cursor.execute("SELECT JSON FROM Stats WHERE Membercode = ?", (id,))
+        row = cursor.fetchone()
+        if row:
+            result["stats"] = json.loads(row["JSON"])
+
+    return Response(
+        json.dumps(result, ensure_ascii=False),
+        mimetype="application/json"
+    )
