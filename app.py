@@ -12,6 +12,7 @@ from votegetter import apivote
 from lobbygetter import apilobby
 from debategetter import apidebate
 from questiongetter import apiquestion
+from members import apimember
 from config import dbpath
 from idsearch import getmember
 from flask_limiter import Limiter
@@ -19,7 +20,7 @@ from flask_limiter.util import get_remote_address
 import sqlite3
 
 app = Flask(__name__)
-CORS(app, origins=["http://127.0.0.1:5000", "https://civie.ie"])
+CORS(app, origins=["http://127.0.0.1:5500", "http://127.0.0.1:5000", "https://civie.ie", "http://192.168.1.26:5500", "http://192.168.1.154:5500"])
 
 limiter =Limiter(
     key_func =get_remote_address,
@@ -27,25 +28,18 @@ limiter =Limiter(
     default_limits= []
 )
 
-#shows all members
-@app.route("/API/other/members")
+#shows members
+@app.route("/API/sector/member")
 @limiter.limit("10000000 per hour")
-def member():
-    with sqlite3.connect(dbpath) as conn:
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute("SELECT JSON FROM Members")
-        data = [json.loads(row["JSON"]) for row in cursor.fetchall()]
-    return Response(
-        json.dumps(data, ensure_ascii=False),
-        mimetype="application/json"
-    )
+def runmembersearch():
+    return apimember()
 
 #shows bill records
 @app.route("/API/sector/bill")
 @limiter.limit("10000000 per hour")
 def runbill():
     return apibill()
+
 #shows vote records
 @app.route("/API/sector/vote")
 @limiter.limit("10000000 per hour")
@@ -77,4 +71,5 @@ def runmember(id):
     return getmember(id)
 
 if __name__ == "__main__":
-    app.run() 
+    app.run(host='0.0.0.0', port=5000)
+
