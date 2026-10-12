@@ -4,14 +4,12 @@ import json
 import sqlite3
 from config import pagesize, dbpath
 
-
 def apivote():
     #queries
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
     before = request.args.get("before", "2300-01-01") or "2300-01-01"
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
-    searchforname = request.args.get("name", "")
 
     #vote type queries
     dail = request.args.get("dail", "true").lower() == "true"
@@ -20,6 +18,7 @@ def apivote():
 
     OutcomeLost = request.args.get("lost", "true").lower() == "true"
     OutcomeCarried = request.args.get("carried", "true").lower() == "true"
+    OutcomeNull = request.args.get("null", "true").lower() == "true"
 
     start = (page - 1) * pagesize
 
@@ -27,13 +26,14 @@ def apivote():
         SELECT JSON FROM Votes
         WHERE ContextDate <= ?
         AND ContextDate >= ?
-        AND (? = '' OR Vote LIKE ?)
-        AND (? = '' OR ForNamesOfMembers LIKE ? OR AgainstNamesOfMembers LIKE ? OR AbstainNamesOfMembers LIKE ?)
+        AND (? = '' OR Vote LIKE ? OR ForNamesOfMembers LIKE ? OR AgainstNamesOfMembers LIKE ? OR AbstainNamesOfMembers LIKE ?)
         AND (? = 0 OR Chamber != 'Dáil Éireann')
         AND (? = 0 OR Chamber != 'Seanad Éireann')
         AND (? = 0 OR (Chamber = 'Dáil Éireann' OR Chamber = 'Seanad Éireann'))
         AND (? = 0 OR Outcome != 'Lost')
         AND (? = 0 OR Outcome != 'Carried')
+        AND (? = 1 OR Outcome != '_')
+        ORDER BY contextDate DESC
         LIMIT ? OFFSET ?
     """
 
@@ -41,21 +41,21 @@ def apivote():
         SELECT COUNT(*) FROM Votes
         WHERE ContextDate <= ?
         AND ContextDate >= ?
-        AND (? = '' OR Vote LIKE ?)
-        AND (? = '' OR ForNamesOfMembers LIKE ? OR AgainstNamesOfMembers LIKE ? OR AbstainNamesOfMembers LIKE ?)
+        AND (? = '' OR Vote LIKE ? OR ForNamesOfMembers LIKE ? OR AgainstNamesOfMembers LIKE ? OR AbstainNamesOfMembers LIKE ?)
         AND (? = 0 OR Chamber != 'Dáil Éireann')
         AND (? = 0 OR Chamber != 'Seanad Éireann')
         AND (? = 0 OR (Chamber = 'Dáil Éireann' OR Chamber = 'Seanad Éireann'))
         AND (? = 0 OR Outcome != 'Lost')
         AND (? = 0 OR Outcome != 'Carried')
+        AND (? = 1 OR Outcome != '_')
     """
 
     sparams = [
         before, after,
-        search, f"%{search}%",
-        searchforname, f"%{searchforname}%", f"%{searchforname}%", f"%{searchforname}%",
+        search, f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%",
         int(not dail), int(not seanad), int(not committee),
         int(not OutcomeLost), int(not OutcomeCarried),
+        int(OutcomeNull),
     ]
 
     with sqlite3.connect(dbpath) as conn:
