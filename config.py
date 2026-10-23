@@ -5,3 +5,4 @@ from pathlib import Path
 pagesize = 30
 base = Path(__file__).resolve().parent
 dbpath = base / "Database" / "civie.db"
+RATE_LIMIT = "360 per hour"
