@@ -16,6 +16,7 @@ from questiongetter import apiquestion
 from compositiongetter import apicomposition
 from members import apimember
 from idsearch import getmember
+from partygetter import apiparty
 from config import RATE_LIMIT
 
 app = Flask(__name__)
@@ -71,6 +72,12 @@ def runquestion():
 @limiter.limit(RATE_LIMIT)
 def runmember(id):
     return getmember(id)
+
+# shows every party currently in the dail, if not in dail they wont be here
+@app.route("/API/sector/party")
+@limiter.limit(RATE_LIMIT)
+def runparty():
+    return apiparty()
 
 # gets party numbers
 @app.route("/API/sector/index")
