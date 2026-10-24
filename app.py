@@ -26,48 +26,42 @@ limiter = Limiter(
     key_func=get_remote_address,
     app=app,
     default_limits=[],
+    application_limits=[RATE_LIMIT],
     storage_uri="memory://",
 )
 
 # shows members
 @app.route("/API/sector/member")
-@limiter.limit(RATE_LIMIT)
 def runmembersearch():
     return apimember()
 
 # shows bill records
 @app.route("/API/sector/bill")
-@limiter.limit(RATE_LIMIT)
 def runbill():
     return apibill()
 
 # shows vote records
 @app.route("/API/sector/vote")
-@limiter.limit(RATE_LIMIT)
 def runvote():
     return apivote()
 
 # shows lobbying records
 @app.route("/API/sector/lobby")
-@limiter.limit(RATE_LIMIT)
 def runlobby():
     return apilobby()
 
 # shows debate records
 @app.route("/API/sector/debate")
-@limiter.limit(RATE_LIMIT)
 def rundebate():
     return apidebate()
 
 # shows question records
 @app.route("/API/sector/question")
-@limiter.limit(RATE_LIMIT)
 def runquestion():
     return apiquestion()
 
 # gets bills, votes, debates, lobbying and questions for the memberid inserted
 @app.route("/API/<id>")
-@limiter.limit(RATE_LIMIT)
 def runmember(id):
     return getmember(id)
 
