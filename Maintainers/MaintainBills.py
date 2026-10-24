@@ -9,11 +9,7 @@ import json, sqlite3, os, requests, time
 from bs4 import BeautifulSoup
 
 #paths
-file = os.path.abspath(__file__)
-filepath = os.path.dirname(file)
-base = os.path.abspath(os.path.join(filepath, "..", "..", ".."))
-dbpath = os.path.join(base, "CivieDatabase", "civie.db")
-dbpath = os.path.normpath(dbpath)
+dbpath = "/var/www/flask_app/Database/civie.db"
 conn = sqlite3.connect(dbpath)
 cur = conn.cursor()
 skip = 0
