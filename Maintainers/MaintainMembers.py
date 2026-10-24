@@ -6,12 +6,8 @@ the object which will be returned to the end client via my super cool API
 """
 import requests, json, sqlite3, os, time
 
-#path
-file = os.path.abspath(__file__)
-filepath = os.path.dirname(file)
-base = os.path.abspath(os.path.join(filepath, "..", "..", ".."))
-dbpath = os.path.join(base, "CivieDatabase", "civie.db")
-dbpath = os.path.normpath(dbpath)
+#paths
+dbpath = "/var/www/flask_app/Database/civie.db"
 conn = sqlite3.connect(dbpath)
 cur = conn.cursor()
 skip = 0
