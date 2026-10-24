@@ -10,12 +10,9 @@ def apilobby():
     page = request.args.get("page", 1, type=int)
     before = request.args.get("before", "2300-01-01") or "2300-01-01"
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
-    searchforname = request.args.get("name", "")
 
-    #Searchable Queries
-    searchLobbyistName = request.args.get("LobbyistName", "")
-    searchLobbyistGroup = request.args.get("LobbyistGroup", "")
-    searchMatters = request.args.get("Matters", "")
+    #Searchable Query
+    q = request.args.get("q", "")
 
     start = (page - 1) * pagesize
 
@@ -23,10 +20,7 @@ def apilobby():
         SELECT JSON FROM Lobbying
         WHERE contextDate <= ?
         AND contextDate >= ?
-        AND (? = '' OR LobbyistName LIKE ?)
-        AND (? = '' OR MainLobbyist LIKE ?)
-        AND (? = '' OR RelevantMatter LIKE ? OR Details LIKE ? OR SubjectMatter LIKE ? OR LobbyingActivities LIKE ? OR IntendedResults LIKE ?)
-        AND (? = '' OR Membercodes LIKE ?)
+        AND (? = '' OR LobbyistName LIKE ? OR MainLobbyist LIKE ? OR Membercodes LIKE ? OR RelevantMatter LIKE ? OR Details LIKE ? OR SubjectMatter LIKE ? OR LobbyingActivities LIKE ? OR IntendedResults LIKE ?)
         LIMIT ? OFFSET ?
     """
 
@@ -34,18 +28,14 @@ def apilobby():
         SELECT COUNT(*) FROM Lobbying
         WHERE contextDate <= ?
         AND contextDate >= ?
-        AND (? = '' OR LobbyistName LIKE ?)
-        AND (? = '' OR MainLobbyist LIKE ?)
-        AND (? = '' OR RelevantMatter LIKE ? OR Details LIKE ? OR SubjectMatter LIKE ? OR LobbyingActivities LIKE ? OR IntendedResults LIKE ?)
-        AND (? = '' OR Membercodes LIKE ?)
+        AND (? = '' OR LobbyistName LIKE ? OR MainLobbyist LIKE ? OR Membercodes LIKE ? OR RelevantMatter LIKE ? OR Details LIKE ? OR SubjectMatter LIKE ? OR LobbyingActivities LIKE ? OR IntendedResults LIKE ?)
     """
+
+    like = f"%{q}%"
 
     sparams = [
         before, after,
-        searchLobbyistName, f"%{searchLobbyistName}%",
-        searchLobbyistGroup, f"%{searchLobbyistGroup}%",
-        searchMatters, f"%{searchMatters}%", f"%{searchMatters}%", f"%{searchMatters}%", f"%{searchMatters}%", f"%{searchMatters}%",
-        searchforname, f"%{searchforname}%"
+        q, like, like, like, like, like, like, like, like
     ]
 
     with sqlite3.connect(dbpath) as conn:
