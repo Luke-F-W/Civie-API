@@ -3,11 +3,8 @@ Keeps two rows in the Stats table up to date with how many sitting members
 """
 import requests, json, sqlite3, os
 
-#paths
+#path
 dbpath = "/var/www/flask_app/Database/civie.db"
-conn = sqlite3.connect(dbpath)
-cur = conn.cursor()
-skip = 0
 
 HOUSES = {
     "dail": 34,
@@ -21,6 +18,7 @@ def fetch_members(house_code, house_no):
         url = ("https://api.oireachtas.ie/v1/members?chamber=" + house_code
                + "&house_no=" + str(house_no) + "&skip=" + str(skip) + "&limit=1000")
         response = requests.get(url, timeout=30)
+        print(results)
         response.raise_for_status()
         results = response.json().get("results")
         if not results:
@@ -81,3 +79,6 @@ def main():
     conn.commit()
     conn.close()
     print("done")
+
+if __name__ == "__main__":
+    main()
