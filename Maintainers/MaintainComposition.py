@@ -18,7 +18,6 @@ def fetch_members(house_code, house_no):
         url = ("https://api.oireachtas.ie/v1/members?chamber=" + house_code
                + "&house_no=" + str(house_no) + "&skip=" + str(skip) + "&limit=1000")
         response = requests.get(url, timeout=30)
-        print(results)
         response.raise_for_status()
         results = response.json().get("results")
         if not results:
