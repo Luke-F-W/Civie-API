@@ -20,7 +20,10 @@ from config import RATE_LIMIT
 app = Flask(__name__)
 
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
-CORS(app, origins=["https://civie.ie"])
+CORS(app, origins=[
+    "https://civie.ie",
+    "http://127.0.0.1:5500",
+])
 
 limiter = Limiter(
     key_func=get_remote_address,
