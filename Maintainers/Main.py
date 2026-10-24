@@ -5,6 +5,7 @@ subprocess.run([sys.executable, "Maintainers/MaintainVotes.py"])
 subprocess.run([sys.executable, "Maintainers/MaintainDebates.py"])
 
 subprocess.run([sys.executable, "Maintainers/MaintainMembers.py"])
+subprocess.run([sys.executable, "Maintainers/MaintainParty.py"])
 
 subprocess.run([sys.executable, "Maintainers/MaintainStats.py"])
 subprocess.run([sys.executable, "Maintainers/MaintainComposition.py"])
