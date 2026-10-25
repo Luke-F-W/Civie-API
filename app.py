@@ -28,7 +28,7 @@ CORS(app, origins=[
     "https://www.civie.ie",
     "http://127.0.0.1:5500",
     "http://localhost:5500",
-    "192.168.128.150:5500",
+    "http://192.168.128.150:5500",
 ])
 
 limiter = Limiter(
