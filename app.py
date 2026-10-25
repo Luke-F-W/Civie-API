@@ -14,11 +14,12 @@ from lobbygetter import apilobby
 from debategetter import apidebate
 from questiongetter import apiquestion
 from compositiongetter import apicomposition
+from lobbyistgetter import apilobbyist
+from constituencygetter import apiconstituency
 from members import apimember
 from idsearch import getmember
 from partygetter import apiparty
 from config import RATE_LIMIT
-from constituencygetter import apiconstituency
 
 app = Flask(__name__)
 
@@ -96,6 +97,12 @@ def runconstituency():
 @limiter.limit(RATE_LIMIT)
 def runindex():
     return apicomposition()
+
+# shows lobbyists
+@app.route("/API/sector/lobbyist")
+@limiter.limit(RATE_LIMIT)
+def runlobbyist():
+    return apilobbyist()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
