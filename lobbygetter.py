@@ -6,12 +6,11 @@ from config import pagesize, dbpath
 
 
 def apilobby():
-    #Main Queries
+    #queries
     page = request.args.get("page", 1, type=int)
     before = request.args.get("before", "2300-01-01") or "2300-01-01"
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
-
-    #Searchable Query
+    lobbyistcode = request.args.get("lobbyistcode", "")
     q = request.args.get("q", "")
 
     start = (page - 1) * pagesize
@@ -20,6 +19,7 @@ def apilobby():
         SELECT JSON FROM Lobbying
         WHERE contextDate <= ?
         AND contextDate >= ?
+        AND (? = '' OR LobbyistCode = ?)
         AND (? = '' OR LobbyistName LIKE ? OR MainLobbyist LIKE ? OR Membercodes LIKE ? OR RelevantMatter LIKE ? OR Details LIKE ? OR SubjectMatter LIKE ? OR LobbyingActivities LIKE ? OR IntendedResults LIKE ?)
         LIMIT ? OFFSET ?
     """
@@ -28,6 +28,7 @@ def apilobby():
         SELECT COUNT(*) FROM Lobbying
         WHERE contextDate <= ?
         AND contextDate >= ?
+        AND (? = '' OR LobbyistCode = ?)
         AND (? = '' OR LobbyistName LIKE ? OR MainLobbyist LIKE ? OR Membercodes LIKE ? OR RelevantMatter LIKE ? OR Details LIKE ? OR SubjectMatter LIKE ? OR LobbyingActivities LIKE ? OR IntendedResults LIKE ?)
     """
 
@@ -35,6 +36,7 @@ def apilobby():
 
     sparams = [
         before, after,
+        lobbyistcode, lobbyistcode,
         q, like, like, like, like, like, like, like, like
     ]
 
