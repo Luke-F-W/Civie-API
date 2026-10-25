@@ -5,7 +5,7 @@ lobbying, bills, votes, debates, questions and stats. i do not pageinate here
 as the jsons are relatively small and do not really require pagination"""
 from flask import request, Response
 import json
-from config import pagesize, dbpath
+from config import TDpagesize, dbpath
 import sqlite3
 
 
@@ -14,34 +14,33 @@ def getmember(id):
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
-    offset = (page - 1) * pagesize
+    offset = (page - 1) * TDpagesize
 
     tables = [
-        ("bills",     "Legislation", "ContextDate", "NamesOfMembers LIKE ?"),
-        ("votes",     "Votes",       "ContextDate", "ForVoters LIKE ? OR AgainstVoters LIKE ? OR AbstainVotes LIKE ?"),
-        ("debates",   "Debates",     "ContextDate", "MemberCodes LIKE ?"),
-        ("lobbying",  "Lobbying",    "contextDate", "Membercodes LIKE ?"),
-        ("questions", "Questions",   "contextDate", "MembercodeBy LIKE ?"),
+        ("bills",     "Legislation", "contextDate", "Membercodes LIKE ?",                                          1),
+        ("votes",     "Votes",       "ContextDate", "ForVoters LIKE ? OR AgainstVoters LIKE ? OR AbstainVotes LIKE ?", 3),
+        ("debates",   "Debates",     "ContextDate", "MemberCodes LIKE ?",                                          1),
+        ("lobbying",  "Lobbying",    "contextDate", "Membercodes LIKE ?",                                          1),
+        ("questions", "Questions",   "contextDate", "MembercodeBy LIKE ?",                                         1),
     ]
 
     result = {}
-    like = f"%{id}%"
-    slike = f"%{search}%"
+    exact = f"%{id}%"
 
     with sqlite3.connect(dbpath) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        for name, table, datecol, condition in tables:
-            likes = (like, like, like) if name == "votes" else (like,)
+        for name, table, datecol, condition, likecount in tables:
+            likes = tuple([exact] * likecount)
             base = f"FROM {table} WHERE {datecol} <= ? AND {datecol} >= ? AND ({condition}) AND (? = '' OR JSON LIKE ?)"
 
-            cursor.execute(f"SELECT COUNT(*) {base}", (before, after, *likes, search, slike))
+            cursor.execute(f"SELECT COUNT(*) {base}", (before, after, *likes, search, f"%{search}%"))
             records = cursor.fetchone()[0]
 
-            cursor.execute(f"SELECT JSON {base} LIMIT ? OFFSET ?", (before, after, *likes, search, slike, pagesize, offset))
+            cursor.execute(f"SELECT JSON {base} LIMIT ? OFFSET ?", (before, after, *likes, search, f"%{search}%", TDpagesize, offset))
             result[name] = {
-                "page": page, "pagesize": pagesize, "records": records,
+                "page": page, "pagesize": TDpagesize, "records": records,
                 "data": [json.loads(row["JSON"]) for row in cursor.fetchall()]
             }
 
