@@ -56,6 +56,7 @@ def apibill():
         AND (? = 0 OR BillType != 'Hybrid')
         AND (ShortTitleEn LIKE ? OR LongTitleEn LIKE ? OR ShortTitleGa LIKE ?)
         AND (? = '' OR NamesOfMembers LIKE ?)
+        ORDER BY contextDate DESC
         LIMIT ? OFFSET ?
     """
 

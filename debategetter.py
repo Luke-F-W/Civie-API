@@ -31,6 +31,7 @@ def apidebate():
         AND (? = 0 OR HouseCode != 'dail')
         AND (? = 0 OR HouseCode != 'seanad')
         AND (? = 0 OR (HouseCode = 'dail' OR HouseCode = 'seanad'))
+        ORDER BY contextDate DESC
         LIMIT ? OFFSET ?
     """
 

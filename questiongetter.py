@@ -31,6 +31,7 @@ def apiquestion():
         AND (? = '' OR Question LIKE ?)
         AND (? = '' OR answerText LIKE ?)
         AND (? = '' OR Question LIKE ? OR answerText LIKE ?)
+        ORDER BY contextDate DESC
         LIMIT ? OFFSET ?
         """
 

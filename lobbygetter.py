@@ -21,6 +21,7 @@ def apilobby():
         AND contextDate >= ?
         AND (? = '' OR LobbyistCode = ?)
         AND (? = '' OR LobbyistName LIKE ? OR MainLobbyist LIKE ? OR Membercodes LIKE ? OR RelevantMatter LIKE ? OR Details LIKE ? OR SubjectMatter LIKE ? OR LobbyingActivities LIKE ? OR IntendedResults LIKE ?)
+        ORDER BY contextDate DESC      
         LIMIT ? OFFSET ?
     """
 
