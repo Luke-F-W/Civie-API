@@ -18,11 +18,11 @@ from members import apimember
 from idsearch import getmember
 from partygetter import apiparty
 from config import RATE_LIMIT
+from constituencygetter import apiconstituency
 
 app = Flask(__name__)
 
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
-
 CORS(app, origins=[
     "https://civie.ie",
     "https://www.civie.ie",
@@ -79,11 +79,16 @@ def runquestion():
 def runmember(id):
     return getmember(id)
 
-# shows every party currently in the dail, if not in dail they wont be here
+#shows every party currently in the dail, if not in dail they wont be here
 @app.route("/API/sector/party")
 @limiter.limit(RATE_LIMIT)
 def runparty():
     return apiparty()
+
+# for constituency map
+@app.route("/API/sector/constituency")
+def runconstituency():
+    return apiconstituency()
 
 # gets party numbers
 @app.route("/API/sector/index")
