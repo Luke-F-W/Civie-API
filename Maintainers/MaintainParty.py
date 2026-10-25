@@ -48,7 +48,7 @@ websites = {
     "National Progressive Democrats": "N/A",
     "People Before Profit-Solidarity": "https://www.pbp.ie/",
     "Progressive Democrats": "N/A",
-    "Renua": "N/A",
+    "Renua": "https://centreparty.ie/",
     "Sinn Féin": "https://sinnfein.ie/",
     "Social Democrats": "https://www.socialdemocrats.ie/",
     "Socialist Labour Party": "N/A",
