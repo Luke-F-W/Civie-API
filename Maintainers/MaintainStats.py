@@ -143,12 +143,11 @@ def billstats(membercode):
 
     for (j,) in cur.execute("SELECT JSON FROM Legislation WHERE Membercodes LIKE ?", (like,)):
         entry = json.loads(j)
-        uri = (entry.get("bill", {}).get("sponsors") or [{}])[0].get("sponsor", {}).get("by", {}).get("uri") or ""
-        if not uri:
-            continue
-        billMembercode = uri.split("/")[-1]
+        sponsors = entry.get("bill", {}).get("sponsors") or []
+        uris = [((s.get("sponsor") or {}).get("by") or {}).get("uri") or "" for s in sponsors]
+        sponsorcodes = [u.split("/")[-1] for u in uris if u]
 
-        if billMembercode == membercode:
+        if membercode in sponsorcodes:
             billCount += 1
             context_date = entry.get("contextDate", "")
             year = context_date.split("-")[0]
@@ -167,24 +166,22 @@ def billstats(membercode):
     return billCount, billCountPerYear_dict, billSource_dict
 
 def debatestats(membercode):
+    debateCount = 0
     speechCount = 0
     wordCount = 0
     speechYear_dict = {}
     speechChamber_dict = {}
-    speechSection_dict = {}
-    debateDays = set()  # unique (chamber, date) pairs the member spoke in
     like = "%" + membercode + "%"
 
     for (j,) in cur.execute("SELECT JSON FROM debates WHERE MemberCodes LIKE ?", (like,)):
         entry = json.loads(j)
+        debateCount += 1
         context_date = entry.get("contextDate", "")
         year = context_date.split("-")[0]
         chamber = entry.get("debateRecord", {}).get("house", {}).get("houseCode", "")
         sections = entry.get("debatestuff", {}).get("sections", []) or []
 
         for section in sections:
-            title = section.get("title", "")
-
             for speech in section.get("speeches", []) or []:
                 # speakers like "Deputy Michael Collins" have a null membercode, so they are skipped
                 if speech.get("membercode", "") != membercode:
@@ -192,7 +189,6 @@ def debatestats(membercode):
 
                 speechCount += 1
                 wordCount += len((speech.get("speechtext") or "").split())
-                debateDays.add((chamber, context_date))
 
                 if year in speechYear_dict:
                     speechYear_dict[year] += 1
@@ -204,12 +200,7 @@ def debatestats(membercode):
                 else:
                     speechChamber_dict[chamber] = 1
 
-                if title in speechSection_dict:
-                    speechSection_dict[title] += 1
-                else:
-                    speechSection_dict[title] = 1
-
-    return speechCount, wordCount, len(debateDays), speechYear_dict, speechChamber_dict, speechSection_dict
+    return speechCount, wordCount, speechYear_dict, speechChamber_dict, debateCount
 
 # speechCount_int is an int with the amount of speeches (individual contributions) by the member
 # wordCount_int is an int with the total words spoken by the member
@@ -251,7 +242,7 @@ members = [row[0] for row in cur.execute("SELECT MemberCode FROM Members")]
 for membercode in members:
     print("========================================")
     print("Starting: " + membercode)
-    speechCount_int, wordCount_int, debateDayCount_int, speechYear_dict, speechChamber_dict, speechSection_dict = debatestats(membercode)
+    speechCount_int, wordCount_int, speechYear_dict, speechChamber_dict, debatecount = debatestats(membercode)
     print("debates is done for: " + membercode)
 
     lobbyistcount_dict, lobbycount_int, lobbyyear_dict = lobbyiststats(membercode)
@@ -273,9 +264,9 @@ for membercode in members:
             "debates": {
                 "speechCount": speechCount_int,
                 "wordCount": wordCount_int,
-                "debateDayCount": debateDayCount_int,
                 "speechesPerYear": speechYear_dict,
                 "speechesPerChamber": speechChamber_dict,
+                "debateCount": debatecount,
             },
             "lobbying": {
                 "lobbyCount": lobbycount_int,
@@ -316,3 +307,4 @@ for membercode in members:
 conn.close()
 
 print("done")
+
