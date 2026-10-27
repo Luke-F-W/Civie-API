@@ -29,6 +29,7 @@ CORS(app, origins=[
     "https://www.civie.ie",
     "http://localhost:4321",
     "http://127.0.0.1:4321",
+    "http://loadbalancer-1141809072.us-east-1.elb.amazonaws.com",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "http://192.168.128.150:5500",
