@@ -31,6 +31,11 @@ def getmember(id):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
+        cursor.execute("SELECT JSON FROM Members WHERE MemberCode = ?", (id,))
+        row = cursor.fetchone()
+        if row:
+            result["member"] = json.loads(row["JSON"])
+
         for name, table, datecol, condition, likecount in tables:
             likes = tuple([exact] * likecount)
             base = f"FROM {table} WHERE {datecol} <= ? AND {datecol} >= ? AND ({condition}) AND (? = '' OR JSON LIKE ?)"
