@@ -2,14 +2,14 @@
 from flask import request, Response
 import json
 import sqlite3
-from config import pagesize, dbpath
+from config import TDpagesize, dbpath
 
 
 def apimember():
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
 
-    start = (page - 1) * pagesize
+    start = (page - 1) * TDpagesize
 
     query = """
         SELECT JSON
@@ -34,12 +34,12 @@ def apimember():
         cursor.execute(countquery, sparams)
         records = cursor.fetchone()[0]
 
-        cursor.execute(query, sparams + [pagesize, start])
+        cursor.execute(query, sparams + [TDpagesize, start])
         pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
 
     responsed = {
         "page": page,
-        "pagesize": pagesize,
+        "pagesize": TDpagesize,
         "records": records,
         "data": pagelist
     }

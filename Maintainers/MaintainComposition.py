@@ -55,6 +55,7 @@ def tally(members, house_code, house_no):
 def main():
     conn = sqlite3.connect(dbpath)
     cur = conn.cursor()
+    cur.execute("DELETE FROM Stats")
 
     for house_code, house_no in HOUSES.items():
         members = fetch_members(house_code, house_no)

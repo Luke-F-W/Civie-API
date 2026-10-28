@@ -11,7 +11,6 @@ import json, sqlite3, os
 dbpath = "/var/www/flask_app/Database/civie.db"
 conn = sqlite3.connect(dbpath)
 cur = conn.cursor()
-cur.execute("DELETE FROM Stats")
 
 def lobbyiststats(membercode):
     lobbyist_counts = {}
