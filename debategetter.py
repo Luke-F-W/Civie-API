@@ -2,7 +2,7 @@
 from flask import request, Response
 import json
 import sqlite3
-from config import pagesize, dbpath
+from config import Debatepagesize, dbpath
 
 
 def apidebate():
@@ -19,7 +19,7 @@ def apidebate():
     seanad = request.args.get("seanad", "true").lower() == "true"
     committee = request.args.get("committee", "true").lower() == "true"
 
-    start = (page - 1) * pagesize
+    start = (page - 1) * Debatepagesize
 
     query = """
         SELECT JSON FROM Debates
@@ -62,12 +62,12 @@ def apidebate():
         cursor.execute(countquery, sparams)
         records = cursor.fetchone()[0]
 
-        cursor.execute(query, sparams + [pagesize, start])
+        cursor.execute(query, sparams + [Debatepagesize, start])
         pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
 
     responsed = {
         "page": page,
-        "pagesize": pagesize,
+        "pagesize": Debatepagesize,
         "records": records,
         "data": pagelist
     }

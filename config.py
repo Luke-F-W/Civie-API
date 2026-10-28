@@ -4,6 +4,7 @@ there is even less in here"""
 from pathlib import Path
 pagesize = 30
 TDpagesize = 15 # td jsons are large, so im giving them less
+Debatepagesize = 20 # also large jsons
 base = Path(__file__).resolve().parent
 dbpath = base / "Database" / "civie.db"
 RATE_LIMIT = "360 per hour"
