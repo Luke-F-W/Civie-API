@@ -57,49 +57,49 @@ limiter = Limiter(
 # Shows members
 @app.route("/API/sector/member")
 @limiter.limit(RATE_LIMIT)
-@cache.cached(timeout=3600)
+@cache.cached(timeout=3600, query_string=True)
 def runmembersearch():
     return apimember()
 
 # Shows bill records
 @app.route("/API/sector/bill")
 @limiter.limit(RATE_LIMIT)
-@cache.cached(timeout=300)
+@cache.cached(timeout=300, query_string=True)
 def runbill():
     return apibill()
 
 # Shows vote records
 @app.route("/API/sector/vote")
 @limiter.limit(RATE_LIMIT)
-@cache.cached(timeout=300)
+@cache.cached(timeout=300, query_string=True)
 def runvote():
     return apivote()
 
 # Shows lobbying records
 @app.route("/API/sector/lobby")
 @limiter.limit(RATE_LIMIT)
-@cache.cached(timeout=1800)
+@cache.cached(timeout=1800, query_string=True)
 def runlobby():
     return apilobby()
 
 # Shows debate records
 @app.route("/API/sector/debate")
 @limiter.limit(RATE_LIMIT)
-@cache.cached(timeout=300)
+@cache.cached(timeout=300, query_string=True)
 def rundebate():
     return apidebate()
 
 # Shows question records
 @app.route("/API/sector/question")
 @limiter.limit(RATE_LIMIT)
-@cache.cached(timeout=300)
+@cache.cached(timeout=300, query_string=True)
 def runquestion():
     return apiquestion()
 
 # Gets bills, votes, debates, lobbying and questions for the member ID inserted
 @app.route("/API/<id>")
 @limiter.limit(RATE_LIMIT)
-@cache.cached(timeout=300)
+@cache.cached(timeout=300, query_string=True)
 def runmember(id):
     return getmember(id)
 
@@ -126,7 +126,7 @@ def runindex():
 # Shows lobbyists
 @app.route("/API/sector/lobbyist")
 @limiter.limit(RATE_LIMIT)
-@cache.cached(timeout=1800)
+@cache.cached(timeout=1800, query_string=True)
 def runlobbyist():
     return apilobbyist()
 
