@@ -5,7 +5,7 @@ import sqlite3
 from config import pagesize, dbpath
 
 
-def apilobby():
+def apilobbyist():
     #queries
     page = request.args.get("page", 1, type=int)
     lobbyistcode = request.args.get("lobbyistcode", "")
