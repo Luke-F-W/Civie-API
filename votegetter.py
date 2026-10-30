@@ -10,6 +10,7 @@ def apivote():
     search = request.args.get("q", "")
     before = request.args.get("before", "2300-01-01") or "2300-01-01"
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
+    votekey = request.args.get("votekey", "")
 
     #vote type queries
     dail = request.args.get("dail", "true").lower() == "true"
@@ -23,7 +24,7 @@ def apivote():
     start = (page - 1) * pagesize
 
     query = """
-        SELECT JSON FROM Votes
+        SELECT JSON, VotePrimaryKey FROM Votes
         WHERE ContextDate <= ?
         AND ContextDate >= ?
         AND (? = '' OR Vote LIKE ? OR ForNamesOfMembers LIKE ? OR AgainstNamesOfMembers LIKE ? OR AbstainNamesOfMembers LIKE ?)
@@ -33,6 +34,7 @@ def apivote():
         AND (? = 0 OR Outcome != 'Lost')
         AND (? = 0 OR Outcome != 'Carried')
         AND (? = 1 OR Outcome != '_')
+        AND (? = '' OR VotePrimaryKey = ?)
         ORDER BY contextDate DESC
         LIMIT ? OFFSET ?
     """
@@ -48,6 +50,7 @@ def apivote():
         AND (? = 0 OR Outcome != 'Lost')
         AND (? = 0 OR Outcome != 'Carried')
         AND (? = 1 OR Outcome != '_')
+        AND (? = '' OR VotePrimaryKey = ?)
     """
 
     sparams = [
@@ -56,6 +59,7 @@ def apivote():
         int(not dail), int(not seanad), int(not committee),
         int(not OutcomeLost), int(not OutcomeCarried),
         int(OutcomeNull),
+        votekey, votekey,
     ]
 
     with sqlite3.connect(dbpath) as conn:
@@ -66,7 +70,11 @@ def apivote():
         records = cursor.fetchone()[0]
 
         cursor.execute(query, sparams + [pagesize, start])
-        pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
+        pagelist = []
+        for row in cursor.fetchall():
+            record = json.loads(row["JSON"])
+            record["VotePrimaryKey"] = row["VotePrimaryKey"]
+            pagelist.append(record)
 
     responsed = {
         "page": page,

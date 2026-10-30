@@ -11,6 +11,7 @@ def apiquestion():
     search = request.args.get("q", "")
     before = request.args.get("before", "2300-01-01") or "2300-01-01"
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
+    questionkey = request.args.get("questionkey", "")
 
     #type queries
     oral = request.args.get("oral", "true").lower() == "true"
@@ -23,7 +24,7 @@ def apiquestion():
     start = (page - 1) * pagesize
 
     query = """
-        SELECT JSON FROM Questions
+        SELECT JSON, QuestionPrimaryKey FROM Questions
         WHERE contextDate <= ?
         AND contextDate >= ?
         AND (? = 0 OR QuestionType != 'Oral')
@@ -31,6 +32,7 @@ def apiquestion():
         AND (? = '' OR Question LIKE ?)
         AND (? = '' OR answerText LIKE ?)
         AND (? = '' OR Question LIKE ? OR answerText LIKE ?)
+        AND (? = '' OR QuestionPrimaryKey = ?)
         ORDER BY contextDate DESC
         LIMIT ? OFFSET ?
         """
@@ -44,6 +46,7 @@ def apiquestion():
         AND (? = '' OR Question LIKE ?)
         AND (? = '' OR answerText LIKE ?)
         AND (? = '' OR Question LIKE ? OR answerText LIKE ?)
+        AND (? = '' OR QuestionPrimaryKey = ?)
     """
 
     sparams = [
@@ -52,6 +55,7 @@ def apiquestion():
         questionText, f"%{questionText}%",
         answerText, f"%{answerText}%",
         search, f"%{search}%", f"%{search}%",
+        questionkey, questionkey,
     ]
 
     with sqlite3.connect(dbpath) as conn:
@@ -62,7 +66,11 @@ def apiquestion():
         records = cursor.fetchone()[0]
 
         cursor.execute(query, sparams + [pagesize, start])
-        pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
+        pagelist = []
+        for row in cursor.fetchall():
+            record = json.loads(row["JSON"])
+            record["QuestionPrimaryKey"] = row["QuestionPrimaryKey"]
+            pagelist.append(record)
 
     responsed = {
         "page": page,

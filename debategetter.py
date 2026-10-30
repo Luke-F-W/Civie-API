@@ -13,6 +13,7 @@ def apidebate():
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
     searchforname = request.args.get("name", "")
     searchdebatetitles = request.args.get("debatetitles", "")
+    debateid = request.args.get("debatekey", "")
 
     #debate type queries
     dail = request.args.get("dail", "true").lower() == "true"
@@ -22,7 +23,7 @@ def apidebate():
     start = (page - 1) * Debatepagesize
 
     query = """
-        SELECT JSON FROM Debates
+        SELECT JSON, DebateID FROM Debates
         WHERE ContextDate <= ?
         AND ContextDate >= ?
         AND (? = '' OR DebateTitles LIKE ? OR JSON LIKE ?)
@@ -31,6 +32,7 @@ def apidebate():
         AND (? = 0 OR HouseCode != 'dail')
         AND (? = 0 OR HouseCode != 'seanad')
         AND (? = 0 OR (HouseCode = 'dail' OR HouseCode = 'seanad'))
+        AND (? = '' OR DebateID = ?)
         ORDER BY contextDate DESC
         LIMIT ? OFFSET ?
     """
@@ -45,6 +47,7 @@ def apidebate():
         AND (? = 0 OR HouseCode != 'dail')
         AND (? = 0 OR HouseCode != 'seanad')
         AND (? = 0 OR (HouseCode = 'dail' OR HouseCode = 'seanad'))
+        AND (? = '' OR DebateID = ?)
     """
 
     sparams = [
@@ -53,6 +56,7 @@ def apidebate():
         searchforname, f"%{searchforname}%", f"%{searchforname}%",
         searchdebatetitles, f"%{searchdebatetitles}%",
         int(not dail), int(not seanad), int(not committee),
+        debateid, debateid,
     ]
 
     with sqlite3.connect(dbpath) as conn:
@@ -63,7 +67,11 @@ def apidebate():
         records = cursor.fetchone()[0]
 
         cursor.execute(query, sparams + [Debatepagesize, start])
-        pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
+        pagelist = []
+        for row in cursor.fetchall():
+            record = json.loads(row["JSON"])
+            record["DebateID"] = row["DebateID"]
+            pagelist.append(record)
 
     responsed = {
         "page": page,

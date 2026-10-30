@@ -1,13 +1,14 @@
 """
 Main Flask application for the API. This file has all of the routes for
-the api, and sets up CORS and rate limiting. there isn't much
-to talk about here.
+the api, and sets up CORS, rate limiting and caching.
 """
 from flask import Flask
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_caching import Cache
 from werkzeug.middleware.proxy_fix import ProxyFix
+
 from billgetter import apibill
 from votegetter import apivote
 from lobbygetter import apilobby
@@ -23,7 +24,16 @@ from config import RATE_LIMIT
 
 app = Flask(__name__)
 
+# Proxy configuration
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
+# Caching configuration
+app.config["CACHE_TYPE"] = "SimpleCache"
+app.config["CACHE_DEFAULT_TIMEOUT"] = 300  # 5 minutes
+
+cache = Cache(app)
+
+# CORS configuration
 CORS(app, origins=[
     "https://civie.ie",
     "https://www.civie.ie",
@@ -36,6 +46,7 @@ CORS(app, origins=[
     "https://dynamic.civie.ie",
 ])
 
+# Rate limiting configuration
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
@@ -43,70 +54,82 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
-# shows members
+# Shows members
 @app.route("/API/sector/member")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=3600)
 def runmembersearch():
     return apimember()
 
-# shows bill records
+# Shows bill records
 @app.route("/API/sector/bill")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=300)
 def runbill():
     return apibill()
 
-# shows vote records
+# Shows vote records
 @app.route("/API/sector/vote")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=300)
 def runvote():
     return apivote()
 
-# shows lobbying records
+# Shows lobbying records
 @app.route("/API/sector/lobby")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=1800)
 def runlobby():
     return apilobby()
 
-# shows debate records
+# Shows debate records
 @app.route("/API/sector/debate")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=300)
 def rundebate():
     return apidebate()
 
-# shows question records
+# Shows question records
 @app.route("/API/sector/question")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=300)
 def runquestion():
     return apiquestion()
 
-# gets bills, votes, debates, lobbying and questions for the memberid inserted
+# Gets bills, votes, debates, lobbying and questions for the member ID inserted
 @app.route("/API/<id>")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=300)
 def runmember(id):
     return getmember(id)
 
-#shows every party currently in the dail, if not in dail they wont be here
+# Shows every party currently in the Dáil
 @app.route("/API/sector/party")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=3600)
 def runparty():
     return apiparty()
 
-# for constituency map
+# For constituency map
 @app.route("/API/sector/constituency")
+@cache.cached(timeout=86400)
 def runconstituency():
     return apiconstituency()
 
-# gets party numbers
+# Gets party numbers
 @app.route("/API/sector/index")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=900)
 def runindex():
     return apicomposition()
 
-# shows lobbyists
+# Shows lobbyists
 @app.route("/API/sector/lobbyist")
 @limiter.limit(RATE_LIMIT)
+@cache.cached(timeout=1800)
 def runlobbyist():
     return apilobbyist()
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

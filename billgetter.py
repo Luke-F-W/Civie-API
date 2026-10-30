@@ -15,6 +15,7 @@ def apibill():
     searchforname = request.args.get("name", "")
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
     before = request.args.get("before", "2300-01-01") or "2300-01-01"
+    billkey = request.args.get("billkey", 0, type=int)
 
     #Status Queries
     StatusCurrent = request.args.get("current", "true").lower() == "true"
@@ -38,7 +39,7 @@ def apibill():
     start = (page - 1) * pagesize
 
     query = """
-        SELECT JSON FROM Legislation
+        SELECT JSON, rowid AS BillPrimaryKey FROM Legislation
         WHERE contextDate <= ?
         AND contextDate >= ?
         AND (? = 0 OR Status != 'Current')
@@ -56,6 +57,7 @@ def apibill():
         AND (? = 0 OR BillType != 'Hybrid')
         AND (ShortTitleEn LIKE ? OR LongTitleEn LIKE ? OR ShortTitleGa LIKE ?)
         AND (? = '' OR NamesOfMembers LIKE ?)
+        AND (? = 0 OR rowid = ?)
         ORDER BY contextDate DESC
         LIMIT ? OFFSET ?
     """
@@ -79,6 +81,7 @@ def apibill():
         AND (? = 0 OR BillType != 'Hybrid')
         AND (ShortTitleEn LIKE ? OR LongTitleEn LIKE ? OR ShortTitleGa LIKE ?)
         AND (? = '' OR NamesOfMembers LIKE ?)
+        AND (? = 0 OR rowid = ?)
     """
 
     sparams = [
@@ -88,18 +91,23 @@ def apibill():
         int(not SourcePrivate), int(not SourceGovernment), int(not SourcePrivateMember),
         int(not BillTypePublic), int(not BillTypePrivate), int(not BillTypeHybrid),
         f"%{search}%", f"%{search}%", f"%{search}%",
-        searchforname, f"%{searchforname}%"
+        searchforname, f"%{searchforname}%",
+        billkey, billkey
     ]
 
     with sqlite3.connect(dbpath) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
+        cursor.execute(query, sparams + [pagesize, start])
+        pagelist = []
+        for row in cursor.fetchall():
+            record = json.loads(row["JSON"])
+            record["BillPrimaryKey"] = row["BillPrimaryKey"]
+            pagelist.append(record)
+
         cursor.execute(countquery, sparams)
         records = cursor.fetchone()[0]
-
-        cursor.execute(query, sparams + [pagesize, start])
-        pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
 
     responsed = {
         "page": page,

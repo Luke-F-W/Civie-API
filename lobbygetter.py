@@ -12,15 +12,17 @@ def apilobby():
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
     lobbyistcode = request.args.get("lobbyistcode", "")
     q = request.args.get("q", "")
+    lobbykey = request.args.get("lobbyingkey", "")
 
     start = (page - 1) * pagesize
 
     query = """
-        SELECT JSON FROM Lobbying
+        SELECT JSON, LobbyingPrimaryKey FROM Lobbying
         WHERE contextDate <= ?
         AND contextDate >= ?
         AND (? = '' OR LobbyistCode = ?)
         AND (? = '' OR LobbyistName LIKE ? OR MainLobbyist LIKE ? OR Membercodes LIKE ? OR RelevantMatter LIKE ? OR Details LIKE ? OR SubjectMatter LIKE ? OR LobbyingActivities LIKE ? OR IntendedResults LIKE ?)
+        AND (? = '' OR LobbyingPrimaryKey = ?)
         ORDER BY contextDate DESC      
         LIMIT ? OFFSET ?
     """
@@ -31,6 +33,7 @@ def apilobby():
         AND contextDate >= ?
         AND (? = '' OR LobbyistCode = ?)
         AND (? = '' OR LobbyistName LIKE ? OR MainLobbyist LIKE ? OR Membercodes LIKE ? OR RelevantMatter LIKE ? OR Details LIKE ? OR SubjectMatter LIKE ? OR LobbyingActivities LIKE ? OR IntendedResults LIKE ?)
+        AND (? = '' OR LobbyingPrimaryKey = ?)
     """
 
     like = f"%{q}%"
@@ -38,7 +41,8 @@ def apilobby():
     sparams = [
         before, after,
         lobbyistcode, lobbyistcode,
-        q, like, like, like, like, like, like, like, like
+        q, like, like, like, like, like, like, like, like,
+        lobbykey, lobbykey
     ]
 
     with sqlite3.connect(dbpath) as conn:
@@ -49,7 +53,11 @@ def apilobby():
         records = cursor.fetchone()[0]
 
         cursor.execute(query, sparams + [pagesize, start])
-        pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
+        pagelist = []
+        for row in cursor.fetchall():
+            record = json.loads(row["JSON"])
+            record["LobbyingPrimaryKey"] = row["LobbyingPrimaryKey"]
+            pagelist.append(record)
 
     responsed = {
         "page": page,

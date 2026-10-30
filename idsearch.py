@@ -14,6 +14,7 @@ def getmember(id):
     after = request.args.get("after", "1900-01-01") or "1900-01-01"
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
+    memberid = request.args.get("memberkey", "")
     offset = (page - 1) * TDpagesize
 
     tables = [
@@ -25,16 +26,25 @@ def getmember(id):
     ]
 
     result = {}
-    exact = f"%{id}%"
 
     with sqlite3.connect(dbpath) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        cursor.execute("SELECT JSON FROM Members WHERE MemberCode = ?", (id,))
+        # If a MemberID is given, use it to find the member code
+        if memberid:
+            cursor.execute("SELECT MemberCode FROM Members WHERE MemberID = ?", (memberid,))
+            row = cursor.fetchone()
+            if row:
+                id = row["MemberCode"]
+
+        exact = f"%{id}%"
+
+        cursor.execute("SELECT JSON, MemberID FROM Members WHERE MemberCode = ?", (id,))
         row = cursor.fetchone()
         if row:
             result["member"] = json.loads(row["JSON"])
+            result["member"]["MemberID"] = row["MemberID"]
 
         for name, table, datecol, condition, likecount in tables:
             likes = tuple([exact] * likecount)

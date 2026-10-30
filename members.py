@@ -9,14 +9,16 @@ def apimember():
     page = request.args.get("page", 1, type=int)
     search = request.args.get("q", "")
     membercode = request.args.get("membercode", "").strip()
+    memberid = request.args.get("memberkey", "").strip()
 
     start = (page - 1) * TDpagesize
 
     query = """
-        SELECT JSON
+        SELECT JSON, MemberID
         FROM Members
         WHERE (? = '' OR FullName LIKE ?)
           AND (? = '' OR MemberCode = ?)
+          AND (? = '' OR MemberID = ?)
         ORDER BY FullName ASC
         LIMIT ? OFFSET ?
     """
@@ -26,9 +28,10 @@ def apimember():
         FROM Members
         WHERE (? = '' OR FullName LIKE ?)
           AND (? = '' OR MemberCode = ?)
+          AND (? = '' OR MemberID = ?)
     """
 
-    sparams = [search, f"%{search}%", membercode, membercode]
+    sparams = [search, f"%{search}%", membercode, membercode, memberid, memberid]
 
     with sqlite3.connect(dbpath) as conn:
         conn.row_factory = sqlite3.Row
@@ -38,10 +41,14 @@ def apimember():
         records = cursor.fetchone()[0]
 
         cursor.execute(query, sparams + [TDpagesize, start])
-        pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
+        pagelist = []
+        for row in cursor.fetchall():
+            record = json.loads(row["JSON"])
+            record["MemberID"] = row["MemberID"]
+            pagelist.append(record)
 
     #exact lookup: return the one member object on its own
-    if membercode:
+    if membercode or memberid:
         if not pagelist:
             return Response(
                 json.dumps({"error": "member not found"}),

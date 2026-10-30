@@ -1,31 +1,42 @@
-"""This returns paginated lobbyist records matching the query, if provided."""
+"""This returns 30 lobbyist records matching the queries (if the user includes any)"""
 from flask import request, Response
 import json
 import sqlite3
 from config import pagesize, dbpath
 
 
-def apilobbyist():
+def apilobby():
+    #queries
     page = request.args.get("page", 1, type=int)
-    search = request.args.get("q", "")
+    lobbyistcode = request.args.get("lobbyistcode", "")
+    q = request.args.get("q", "")
+    lobbyistkey = request.args.get("lobbyistkey", "")
 
     start = (page - 1) * pagesize
 
     query = """
-        SELECT JSON
-        FROM Lobbyist
-        WHERE (? = '' OR Name LIKE ? OR LobbyistCode LIKE ?)
-        ORDER BY Name ASC
+        SELECT JSON, LobbyistPrimaryKey FROM Lobbyist
+        WHERE (? = '' OR LobbyistCode = ?)
+        AND (? = '' OR Name LIKE ? OR LobbyistCode LIKE ?)
+        AND (? = '' OR LobbyistPrimaryKey = ?)
+        ORDER BY Tally DESC
         LIMIT ? OFFSET ?
     """
 
     countquery = """
-        SELECT COUNT(*)
-        FROM Lobbyist
-        WHERE (? = '' OR Name LIKE ? OR LobbyistCode LIKE ?)
+        SELECT COUNT(*) FROM Lobbyist
+        WHERE (? = '' OR LobbyistCode = ?)
+        AND (? = '' OR Name LIKE ? OR LobbyistCode LIKE ?)
+        AND (? = '' OR LobbyistPrimaryKey = ?)
     """
 
-    sparams = [search, f"%{search}%", f"%{search}%"]
+    like = f"%{q}%"
+
+    sparams = [
+        lobbyistcode, lobbyistcode,
+        q, like, like,
+        lobbyistkey, lobbyistkey
+    ]
 
     with sqlite3.connect(dbpath) as conn:
         conn.row_factory = sqlite3.Row
@@ -35,7 +46,11 @@ def apilobbyist():
         records = cursor.fetchone()[0]
 
         cursor.execute(query, sparams + [pagesize, start])
-        pagelist = [json.loads(row["JSON"]) for row in cursor.fetchall()]
+        pagelist = []
+        for row in cursor.fetchall():
+            record = json.loads(row["JSON"])
+            record["LobbyistPrimaryKey"] = row["LobbyistPrimaryKey"]
+            pagelist.append(record)
 
     responsed = {
         "page": page,
