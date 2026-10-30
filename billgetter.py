@@ -103,7 +103,7 @@ def apibill():
         pagelist = []
         for row in cursor.fetchall():
             record = json.loads(row["JSON"])
-            record["BillPrimaryKey"] = row["BillPrimaryKey"]
+            record["billkey"] = row["BillPrimaryKey"]
             pagelist.append(record)
 
         cursor.execute(countquery, sparams)

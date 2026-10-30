@@ -49,7 +49,7 @@ def apilobby():
         pagelist = []
         for row in cursor.fetchall():
             record = json.loads(row["JSON"])
-            record["LobbyistPrimaryKey"] = row["LobbyistPrimaryKey"]
+            record["lobbyistkey"] = row["LobbyistPrimaryKey"]
             pagelist.append(record)
 
     responsed = {

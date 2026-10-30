@@ -44,7 +44,7 @@ def getmember(id):
         row = cursor.fetchone()
         if row:
             result["member"] = json.loads(row["JSON"])
-            result["member"]["MemberID"] = row["MemberID"]
+            result["member"]["memberkey"] = row["MemberID"]
 
         for name, table, datecol, condition, likecount in tables:
             likes = tuple([exact] * likecount)

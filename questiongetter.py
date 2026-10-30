@@ -69,7 +69,7 @@ def apiquestion():
         pagelist = []
         for row in cursor.fetchall():
             record = json.loads(row["JSON"])
-            record["QuestionPrimaryKey"] = row["QuestionPrimaryKey"]
+            record["questionkey"] = row["QuestionPrimaryKey"]
             pagelist.append(record)
 
     responsed = {

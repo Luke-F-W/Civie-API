@@ -44,7 +44,7 @@ def apimember():
         pagelist = []
         for row in cursor.fetchall():
             record = json.loads(row["JSON"])
-            record["MemberID"] = row["MemberID"]
+            record["memberkey"] = row["MemberID"]
             pagelist.append(record)
 
     #exact lookup: return the one member object on its own

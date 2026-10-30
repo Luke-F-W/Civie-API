@@ -73,7 +73,7 @@ def apivote():
         pagelist = []
         for row in cursor.fetchall():
             record = json.loads(row["JSON"])
-            record["VotePrimaryKey"] = row["VotePrimaryKey"]
+            record["votekey"] = row["VotePrimaryKey"]
             pagelist.append(record)
 
     responsed = {

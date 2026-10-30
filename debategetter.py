@@ -70,7 +70,7 @@ def apidebate():
         pagelist = []
         for row in cursor.fetchall():
             record = json.loads(row["JSON"])
-            record["DebateID"] = row["DebateID"]
+            record["debatekey"] = row["DebateID"]
             pagelist.append(record)
 
     responsed = {
