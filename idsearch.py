@@ -17,12 +17,13 @@ def getmember(id):
     memberid = request.args.get("memberkey", "")
     offset = (page - 1) * TDpagesize
 
+    # name, table, date column, member condition, number of ?s in it, key column, key name sent to the browser
     tables = [
-        ("bills",     "Legislation", "contextDate", "Membercodes LIKE ?",                                          1),
-        ("votes",     "Votes",       "ContextDate", "ForVoters LIKE ? OR AgainstVoters LIKE ? OR AbstainVotes LIKE ?", 3),
-        ("debates",   "Debates",     "ContextDate", "MemberCodes LIKE ?",                                          1),
-        ("lobbying",  "Lobbying",    "contextDate", "Membercodes LIKE ?",                                          1),
-        ("questions", "Questions",   "contextDate", "MembercodeBy LIKE ?",                                         1),
+        ("bills",     "Legislation", "contextDate", "Membercodes LIKE ?",                                          1, "rowid",              "billkey"),
+        ("votes",     "Votes",       "ContextDate", "ForVoters LIKE ? OR AgainstVoters LIKE ? OR AbstainVotes LIKE ?", 3, "VotePrimaryKey",     "votekey"),
+        ("debates",   "Debates",     "ContextDate", "MemberCodes LIKE ?",                                          1, "DebateID",           "debatekey"),
+        ("lobbying",  "Lobbying",    "contextDate", "Membercodes LIKE ?",                                          1, "LobbyingPrimaryKey", "lobbyingkey"),
+        ("questions", "Questions",   "contextDate", "MembercodeBy LIKE ?",                                         1, "QuestionPrimaryKey", "questionkey"),
     ]
 
     result = {}
@@ -46,17 +47,25 @@ def getmember(id):
             result["member"] = json.loads(row["JSON"])
             result["member"]["memberkey"] = row["MemberID"]
 
-        for name, table, datecol, condition, likecount in tables:
+        for name, table, datecol, condition, likecount, keycol, keyname in tables:
             likes = tuple([exact] * likecount)
             base = f"FROM {table} WHERE {datecol} <= ? AND {datecol} >= ? AND ({condition}) AND (? = '' OR JSON LIKE ?)"
 
             cursor.execute(f"SELECT COUNT(*) {base}", (before, after, *likes, search, f"%{search}%"))
             records = cursor.fetchone()[0]
 
-            cursor.execute(f"SELECT JSON {base} LIMIT ? OFFSET ?", (before, after, *likes, search, f"%{search}%", TDpagesize, offset))
+            cursor.execute(f"SELECT JSON, {keycol} AS PrimaryKey {base} LIMIT ? OFFSET ?",
+                           (before, after, *likes, search, f"%{search}%", TDpagesize, offset))
+
+            data = []
+            for row in cursor.fetchall():
+                record = json.loads(row["JSON"])
+                record[keyname] = row["PrimaryKey"]
+                data.append(record)
+
             result[name] = {
                 "page": page, "pagesize": TDpagesize, "records": records,
-                "data": [json.loads(row["JSON"]) for row in cursor.fetchall()]
+                "data": data
             }
 
         cursor.execute("SELECT JSON FROM Stats WHERE Membercode = ?", (id,))
