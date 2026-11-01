@@ -19,7 +19,7 @@ def getmember(id):
 
     # name, table, date column, member condition, number of ?s in it, key column, key name sent to the browser
     tables = [
-        ("bills",     "Legislation", "contextDate", "Membercodes LIKE ?",                                          1, "rowid",              "billkey"),
+        ("bills",     "Legislation", "contextDate", "Membercodes LIKE ?",                                          1, "BillPrimaryKey",     "billkey"),
         ("votes",     "Votes",       "ContextDate", "ForVoters LIKE ? OR AgainstVoters LIKE ? OR AbstainVotes LIKE ?", 3, "VotePrimaryKey",     "votekey"),
         ("debates",   "Debates",     "ContextDate", "MemberCodes LIKE ?",                                          1, "DebateID",           "debatekey"),
         ("lobbying",  "Lobbying",    "contextDate", "Membercodes LIKE ?",                                          1, "LobbyingPrimaryKey", "lobbyingkey"),
@@ -54,7 +54,8 @@ def getmember(id):
             cursor.execute(f"SELECT COUNT(*) {base}", (before, after, *likes, search, f"%{search}%"))
             records = cursor.fetchone()[0]
 
-            cursor.execute(f"SELECT JSON, {keycol} AS PrimaryKey {base} LIMIT ? OFFSET ?",
+            # newest first; the key breaks ties between records on the same date
+            cursor.execute(f"SELECT JSON, {keycol} AS PrimaryKey {base} ORDER BY {datecol} DESC, {keycol} DESC LIMIT ? OFFSET ?",
                            (before, after, *likes, search, f"%{search}%", TDpagesize, offset))
 
             data = []

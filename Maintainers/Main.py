@@ -6,8 +6,7 @@ subprocess.run([sys.executable, "MaintainDebates.py"])
 
 subprocess.run([sys.executable, "MaintainMembers.py"])
 subprocess.run([sys.executable, "MaintainParty.py"])
-
-subprocess.run([sys.executable, "MaintainComposition.py"])
+subprocess.run([sys.executable, "MaintainHouse.py"])
 subprocess.run([sys.executable, "MaintainStats.py"])
 
 

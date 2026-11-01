@@ -110,10 +110,10 @@ def runparty():
 
 @app.route("/API/sector/house")
 @limiter.limit(RATE_LIMIT)
-@cache.cached(timeout=900)
+@cache.cached(timeout=900, query_string=True)
 def runhouse():
     return apihouse()
-    
+
 # Shows lobbyists
 @app.route("/API/sector/lobbyist")
 @limiter.limit(RATE_LIMIT)
