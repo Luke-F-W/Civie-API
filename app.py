@@ -8,15 +8,13 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
 from werkzeug.middleware.proxy_fix import ProxyFix
-
+from housegetter import apihouse
 from billgetter import apibill
 from votegetter import apivote
 from lobbygetter import apilobby
 from debategetter import apidebate
 from questiongetter import apiquestion
-from compositiongetter import apicomposition
 from lobbyistgetter import apilobbyist
-from constituencygetter import apiconstituency
 from members import apimember
 from idsearch import getmember
 from partygetter import apiparty
@@ -110,19 +108,12 @@ def runmember(id):
 def runparty():
     return apiparty()
 
-# For constituency map
-@app.route("/API/sector/constituency")
-@cache.cached(timeout=86400)
-def runconstituency():
-    return apiconstituency()
-
-# Gets party numbers
-@app.route("/API/sector/index")
+@app.route("/API/sector/house")
 @limiter.limit(RATE_LIMIT)
 @cache.cached(timeout=900)
-def runindex():
-    return apicomposition()
-
+def runhouse():
+    return apihouse()
+    
 # Shows lobbyists
 @app.route("/API/sector/lobbyist")
 @limiter.limit(RATE_LIMIT)
