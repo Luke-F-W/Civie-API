@@ -9,7 +9,7 @@ def apihouse():
     #queries
     page = request.args.get("page", 1, type=int)
     name = request.args.get("name", "")
-    key = request.args.get("CompositionPrimaryKey", "")
+    key = request.args.get("housekey", "")
 
     start = (page - 1) * pagesize
 
