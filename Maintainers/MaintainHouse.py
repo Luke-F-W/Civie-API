@@ -153,17 +153,32 @@ for dail_name, seanad_names in PAIRS:
     key = int(houses[dail_name]["houseNo"])   # 34th Dáil -> 34, so the key never changes
     rows.append((key, name, json.dumps(data, ensure_ascii=False)))
 
-# Stop if the current Dail or Seanad came back empty, so we never wipe good data
+# Stop if the current Dail or Seanad came back empty, so we never overwrite good data with nothing
 current = json.loads(rows[0][2])
-if not current["dail"] or current["dail"]["total"] == 0 or current["seanad"][0]["total"] == 0:
+if not current["dail"] or not current["seanad"] or not current["seanad"][0] or current["dail"]["total"] == 0 or current["seanad"][0]["total"] == 0:
     print("The current houses came back empty, table left unchanged")
     raise SystemExit
 
-# Clear the table, then save every row with its fixed key
+# Save every row. A row that already exists keeps its key and just gets new data.
+# A row that doesn't exist yet (a new Dail) is added at the end.
 conn = sqlite3.connect(dbpath)
-conn.execute("DELETE FROM Composition")
-conn.executemany("INSERT INTO Composition (CompositionPrimaryKey, Name, JSON) VALUES (?, ?, ?)", rows)
+cur = conn.cursor()
+
+updated = 0
+added = 0
+for key, name, info in rows:
+    cur.execute("UPDATE Composition SET Name = ?, JSON = ? WHERE CompositionPrimaryKey = ?",
+                (name, info, key))
+
+    if cur.rowcount > 0:
+        updated += 1
+    else:
+        # no row was changed, so this Dail is new: add it
+        cur.execute("INSERT INTO Composition (CompositionPrimaryKey, Name, JSON) VALUES (?, ?, ?)",
+                    (key, name, info))
+        added += 1
+
 conn.commit()
 conn.close()
 
-print("Done:", len(rows), "rows saved")
+print(added, "new rows,", updated, "updated")

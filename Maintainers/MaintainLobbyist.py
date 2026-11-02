@@ -1,8 +1,9 @@
 """
 Goes through the Lobbying table, finds every lobbyist and counts how many returns
 each one has. Each name is turned into a lobbyistcode (letters only, lowercase,
-no accents) so "Edwards" and "edwards" count as the same lobbyist. The results
-go into the Lobbyist table as lobbyistcode, name and tally.
+no accents) so "Edwards" and "edwards" count as the same lobbyist.
+Lobbyists already in the Lobbyist table keep their key and just get a new tally.
+New lobbyists are added at the end with the next key.
 """
 
 import json, sqlite3, os, re, unicodedata
@@ -11,7 +12,6 @@ import json, sqlite3, os, re, unicodedata
 dbpath = "/var/www/flask_app/Database/civie.db"
 conn = sqlite3.connect(dbpath)
 cur = conn.cursor()
-cur.execute("DELETE FROM Lobbyist")
 
 #used everywhere atp
 def normalisename(name):
@@ -22,8 +22,10 @@ def normalisename(name):
     return name.lower()
 
 #lobbyistcode
+#ORDER BY rowid keeps the order the same every run, so new lobbyists are
+#numbered in the order they first appear
 lobbyists = {}
-for (name,) in cur.execute("SELECT LobbyistName FROM Lobbying").fetchall():
+for (name,) in cur.execute("SELECT LobbyistName FROM Lobbying ORDER BY rowid").fetchall():
     code = normalisename(name) if name else ""
     if not code:
         continue
@@ -31,20 +33,28 @@ for (name,) in cur.execute("SELECT LobbyistName FROM Lobbying").fetchall():
         lobbyists[code] = {"name": name, "tally": 0}
     lobbyists[code]["tally"] += 1
 
-#clears table to add brand new data :D
-cur.execute("DELETE FROM Lobbyist")
+#makes finding a lobbyist by code quick, and stops the same code being added twice
+cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_lobbyist_code ON Lobbyist(LobbyistCode)")
 
-cur.executemany(
-    "INSERT INTO Lobbyist (LobbyistCode, Name, Tally, JSON) VALUES (?,?,?,?)",
-    [
-        (code, l["name"], l["tally"],
-         json.dumps({"name": l["name"], "lobbyistcode": code, "tally": l["tally"]}))
-        for code, l in lobbyists.items()
-    ]
-)
+updated = 0
+added = 0
+for code, l in lobbyists.items():
+    info = json.dumps({"name": l["name"], "lobbyistcode": code, "tally": l["tally"]})
+
+    #try to rewrite the tally of a lobbyist we already have
+    cur.execute("UPDATE Lobbyist SET Tally = ?, JSON = ? WHERE LobbyistCode = ?",
+                (l["tally"], info, code))
+
+    if cur.rowcount > 0:
+        updated += 1
+    else:
+        #no row was changed, so this lobbyist is new: add them at the end
+        cur.execute("INSERT INTO Lobbyist (LobbyistCode, Name, Tally, JSON) VALUES (?,?,?,?)",
+                    (code, l["name"], l["tally"], info))
+        added += 1
 
 conn.commit()
 conn.close()
 
-print(len(lobbyists), "lobbyists")
+print(added, "new lobbyists,", updated, "updated")
 print("done")

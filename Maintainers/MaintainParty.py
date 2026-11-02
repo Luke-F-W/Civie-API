@@ -7,7 +7,6 @@ import requests, json, sqlite3
 dbpath = "/var/www/flask_app/Database/civie.db"
 conn = sqlite3.connect(dbpath)
 cur = conn.cursor()
-cur.execute("DELETE FROM Party")
 
 #labels that aren't parties, or are the same party under an older name (remove a name from here to keep it)
 SKIP = {
@@ -166,6 +165,11 @@ for chamber, house_no in houses:
         parties[r["party"]["partyCode"]] = r["party"]["showAs"]
 
 
+#makes finding a party by code quick, and stops the same code being added twice
+cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_party_code ON Party(PartyCode)")
+
+updated = 0
+added = 0
 for code, name in parties.items():
     if name in SKIP:
         continue
@@ -177,18 +181,20 @@ for code, name in parties.items():
         "wikipedia": wikipedia[name],
         "status": power[name],
     }
+    info = json.dumps(stats, ensure_ascii=False)
 
-    cur.execute("""
-        INSERT INTO Party (
-        PartyCode, JSON
-        )
-        VALUES (?,?)
-    """, (
-        code,
-        json.dumps(stats, ensure_ascii=False),
-    ))
+    #try to rewrite a party we already have (this is how a changed status or website gets picked up)
+    cur.execute("UPDATE Party SET JSON = ? WHERE PartyCode = ?", (info, code))
+
+    if cur.rowcount > 0:
+        updated += 1
+    else:
+        #no row was changed, so this party is new: add it at the end
+        cur.execute("INSERT INTO Party (PartyCode, JSON) VALUES (?,?)", (code, info))
+        added += 1
 
 conn.commit()
 conn.close()
 
+print(added, "new parties,", updated, "updated")
 print("done")
