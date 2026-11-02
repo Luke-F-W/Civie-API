@@ -28,7 +28,13 @@ MAX_URLS = 45_000                # protocol limit is 50,000
 MAX_BYTES = 40 * 1024 * 1024      # protocol limit is 50 MB uncompressed
 MAX_LOC_LEN = 2048              # protocol limit for a URL
 WRITE_GZ = True                   # also write .gz copies of each file
-FETCH_BATCH = 10_000
+FETCH_BATCH = 200                 # small batches: each row carries a full JSON blob
+
+# Memory: send SQLite's sort/temp spill to the DB's folder (real disk) instead of
+# /tmp, which is often RAM-backed (tmpfs) on a VPS. Skipped if already set or the
+# folder isn't writable.
+if "SQLITE_TMPDIR" not in os.environ and os.access(DB_PATH.parent, os.W_OK):
+    os.environ["SQLITE_TMPDIR"] = str(DB_PATH.parent)
 
 # Static pages (relative to SITE)
 STATIC_PAGES = [
@@ -229,6 +235,9 @@ def main():
     os.makedirs(TMP_DIR)
 
     conn = sqlite3.connect(DB_PATH.as_uri() + "?mode=ro", uri=True)
+    conn.execute("PRAGMA cache_size = -16384")   # 16 MB page cache (negative = KiB)
+    conn.execute("PRAGMA mmap_size = 0")         # don't map the DB file into memory
+    conn.execute("PRAGMA temp_store = FILE")     # sort/temp data goes to disk, not RAM
     summary = []
     all_files = []
 
@@ -268,6 +277,7 @@ def main():
                 continue
             record = json.loads(record_json)
             url = record_url(directory, key_str, kind, record)
+            del record, record_json   # free the large JSON before the next row
             m = DATE_RE.match(str(lm)) if lm else None
             w.add(url, m.group(1) if m else None)
         all_files += w.finish()
