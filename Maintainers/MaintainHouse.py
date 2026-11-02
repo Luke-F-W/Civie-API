@@ -150,18 +150,19 @@ for dail_name, seanad_names in PAIRS:
 
     name = " & ".join([dail_name] + seanad_names)
     data = {"dail": cache[dail_name], "seanad": seanads}
-    rows.append((name, json.dumps(data, ensure_ascii=False)))
+    key = int(houses[dail_name]["houseNo"])   # 34th Dáil -> 34, so the key never changes
+    rows.append((key, name, json.dumps(data, ensure_ascii=False)))
 
 # Stop if the current Dail or Seanad came back empty, so we never wipe good data
-current = json.loads(rows[0][1])
+current = json.loads(rows[0][2])
 if not current["dail"] or current["dail"]["total"] == 0 or current["seanad"][0]["total"] == 0:
     print("The current houses came back empty, table left unchanged")
     raise SystemExit
 
-# Clear the table, then save every row
+# Clear the table, then save every row with its fixed key
 conn = sqlite3.connect(dbpath)
 conn.execute("DELETE FROM Composition")
-conn.executemany("INSERT INTO Composition (Name, JSON) VALUES (?, ?)", rows)
+conn.executemany("INSERT INTO Composition (CompositionPrimaryKey, Name, JSON) VALUES (?, ?, ?)", rows)
 conn.commit()
 conn.close()
 
