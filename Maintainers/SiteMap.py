@@ -44,6 +44,14 @@ STATIC_PAGES = [
     "recordsearcher.html?type=househistory",
     "recordsearcher.html?type=lobbyists",
     "recordsearcher.html?type=tds",
+    "live.html#dail",
+    "live.html#seanad",
+    "live.html#oirtv",
+    "live.html#cr1",
+    "live.html#cr2",
+    "live.html#cr3",
+    "live.html#cr4",
+    "emailtds.html"
 ]
 
 # (sitemap name, table, key column, URL directory, record kind)
