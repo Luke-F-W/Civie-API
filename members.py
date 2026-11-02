@@ -15,19 +15,12 @@ def apimember():
 
   start = (page - 1) * TDpagesize
 
-  # Filters specifically for 34th Dáil or 27th Seanad active memberships
+  # Filters ONLY for active members in the Dáil (no end date)
   active_sql = (
-      " AND EXISTS ("
-      "SELECT 1 FROM json_each(Members.JSON, '$.member.memberships') "
-      "WHERE json_extract(value, '$.membership.dateRange.end') IS NULL "
-      "AND ("
-      "(json_extract(value, '$.membership.house.houseCode') = 'dail' AND"
-      " json_extract(value, '$.membership.house.houseNo') = '34') "
-      "OR "
-      "(json_extract(value, '$.membership.house.houseCode') = 'seanad' AND"
-      " json_extract(value, '$.membership.house.houseNo') = '27')"
-      ")"
-      ")"
+      " AND EXISTS (SELECT 1 FROM json_each(Members.JSON,"
+      " '$.member.memberships') WHERE json_extract(value,"
+      " '$.membership.house.houseCode') = 'dail' AND json_extract(value,"
+      " '$.membership.dateRange.end') IS NULL)"
       if active
       else ""
   )
